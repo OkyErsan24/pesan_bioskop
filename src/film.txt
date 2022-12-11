@@ -1,0 +1,3 @@
+ironman_2008,Iron Man 1,14 April 2008,Stan Lee,Marvel,100,20000
+captain_america_2011,Captain Amerika,19 Juli 2011,Joe Johnston,Marvel,90,25000
+ironman2_2011,iron man 2,20 Oktober 2011,Sten lee,Marvel,100,10000
