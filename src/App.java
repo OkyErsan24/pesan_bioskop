@@ -20,7 +20,7 @@ public class App {
         boolean isLanjutkan = true;
         while (isLanjutkan) {
             clearScreen();
-            System.out.println("Database Bioskop\n");
+            System.out.println("Bioskop\n");
             System.out.println("1. Lihat seluruh Film");
             System.out.println("2. Cari data film");
             System.out.println("3. Tambah data film");
@@ -463,6 +463,7 @@ public class App {
         System.out.println("LIst Film");
         lihatFilm();
         String namaFilm = "", hargaFilm;
+        int bayar, kembalian;
         Scanner input = new Scanner(System.in);
         System.out.print("Masukkan nomor film yang akan ditonton : ");
         int pilihFilm = input.nextInt();
@@ -502,10 +503,22 @@ public class App {
                 System.out.println("Total Harga  : " + totalharga);
                 System.out.println("Diskon       : " + diskon + "%");
                 System.out.println("Total Bayar  : " + totalBayar);
+                System.out.println("------------------------------");
+
                 boolean isPesan = getYesorNo("Apakah anda ingin pesan tiket");
+                System.out.print("Masukkan Jumlah Bayar : ");
+                bayar = input.nextInt();
+                kembalian = bayar - totalBayar;
+                while (kembalian < 0) {
+                    System.out.println("Maaf pembayaran anda kurang!");
+                    System.out.print("Masukkan Jumlah Bayar : ");
+                    bayar = input.nextInt();
+                    kembalian = bayar - totalBayar;
+                }
+                System.out.println("Kembalian : " + kembalian);
                 if (isPesan) {
                     bufferOutput.write(primaryKey + "," + namaFilm + "," + tanggalSekarang + "," + totalTiket + ","
-                            + totalharga + "," + diskon + "," + totalBayar);
+                            + totalharga + "," + diskon + "," + totalBayar + "," + bayar + "," + kembalian);
                     bufferOutput.newLine();
                     bufferOutput.flush();
                 }
@@ -533,17 +546,19 @@ public class App {
             return;
         }
         System.out
-                .print("-----------------------------------------------------------------------------------------------------------------");
+                .println(
+                        "---------------------------------------------------------------------------------------------------------------------------");
         System.out.println(
-                "\n| NO |\tJudul Film            |\tTANGGAL MENONTON      |\tJUMLAH TIKET |\tTOTAL HARGA  |\tDISKON  |   TOTAL BAYAR");
+                "\n| NO |\tJudul Film            |\tTANGGAL MENONTON      |\tJUMLAH TIKET |\tTOTAL HARGA  |\tDISKON  | TOTAL BAYAR     | PEMBAYARAN    | KEMBALIAN ");
         System.out
                 .println(
-                        "-----------------------------------------------------------------------------------------------------------------");
+                        "---------------------------------------------------------------------------------------------------------------------------");
 
         String data = bufferInput.readLine();
         int nomorData = 0;
         while (data != null) {
             nomorData++;
+            System.out.println();
 
             System.out.printf("| %2d ", nomorData);
             StringTokenizer stringToken = new StringTokenizer(data, ",");
@@ -551,16 +566,18 @@ public class App {
             stringToken.nextToken();
             System.out.printf("|\t%-20s  ", stringToken.nextToken());
             System.out.printf("|\t%-20s  ", stringToken.nextToken());
-            System.out.printf("|\t%-11s  ", stringToken.nextToken());
-            System.out.printf("|\t%-13s", stringToken.nextToken());
+            System.out.printf("|\t%-10s  ", stringToken.nextToken());
+            System.out.printf("|\t%-10s", stringToken.nextToken());
             System.out.printf("|\t%-8s", stringToken.nextToken());
+            System.out.printf("|\t%-10s", stringToken.nextToken());
+            System.out.printf("|\t%-10s", stringToken.nextToken());
             System.out.printf("|\t%-10s", stringToken.nextToken());
             System.out.printf("\n");
 
             data = bufferInput.readLine();
         }
         System.out.println(
-                "-----------------------------------------------------------------------------------------------------------------");
+                "---------------------------------------------------------------------------------------------------------------------------");
         fileInput.close();
         bufferInput.close();
     }
@@ -634,7 +651,7 @@ public class App {
                 st = new StringTokenizer(dataMakanan, ",");
                 namaMakanan = st.nextToken();
                 hargaMakanan = st.nextToken();
-                int totalPesan;
+                int totalPesan, bayar, kembalian;
                 System.out.print("Masukkan jumlah pesan : ");
                 totalPesan = input.nextInt();
                 String tanggalSekarang = getTanggal();
@@ -648,9 +665,19 @@ public class App {
                 System.out.println("Total Pesan  : " + totalPesan);
                 System.out.println("Total Harga  : " + totalharga);
                 boolean isPesan = getYesorNo("Apakah anda ingin pesan ini");
+                System.out.print("Masukkan Jumlah Bayar : ");
+                bayar = input.nextInt();
+                kembalian = bayar - totalharga;
+                while (kembalian < 0) {
+                    System.out.println("Maaf pembayaran anda kurang!");
+                    System.out.print("Masukkan Jumlah Bayar : ");
+                    bayar = input.nextInt();
+                    kembalian = bayar - totalharga;
+                }
+                System.out.println("Kembalian : " + kembalian);
                 if (isPesan) {
                     bufferOutput.write(primaryKey + "," + namaMakanan + "," + tanggalSekarang + "," + totalPesan + ","
-                            + totalharga);
+                            + totalharga + "," + bayar + "," + kembalian);
                     bufferOutput.newLine();
                     bufferOutput.flush();
                 }
@@ -802,4 +829,5 @@ public class App {
             System.err.println("Tidak bisa clear screen");
         }
     }
+
 }
