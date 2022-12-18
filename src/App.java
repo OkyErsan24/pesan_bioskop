@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Scanner;
@@ -35,7 +38,7 @@ public class App {
                     System.out.println("\n==================");
                     System.out.println("LIHAT SELURUH FILM");
                     System.out.println("==================");
-                    tampilanDiskon();
+                    lihatFilm();
                     break;
                 case "2":
                     System.out.println("\n==============");
@@ -72,20 +75,19 @@ public class App {
                     System.out.println("\n===========================");
                     System.out.println("Menampilkan Pembelian Tiket");
                     System.out.println("===========================");
-                    // lihatPesanan();
+                    historyPesanTiket();
                     break;
                 case "8":
                     System.out.println("\n=================");
-                    System.out.println("PEMBELIAN MAKANAN");
+                    System.out.println("Pesan MAKANAN");
                     System.out.println("=================");
-                    // pembelianMakanan();
+                    pesanMakanan();
                     break;
                 case "9":
                     System.out.println("\n===================");
                     System.out.println("Tambah Menu Makanan");
                     System.out.println("===================");
-                    // tambahMakanan();
-                    // lihatMakanan();
+                    tambahMenu();
                     break;
                 default:
                     System.out.print("Inputan anda tidak ditemukan\nSilahkan masukkan 1-9");
@@ -138,7 +140,7 @@ public class App {
         } catch (Exception e) {
             System.err.println("Database tidak ditemukan");
             System.err.println("Silahkan tambah data terlebih dahulu");
-            // tambahData();
+            tambahFilm();
             return;
         }
         // Memasukkan keyword dari user
@@ -451,18 +453,19 @@ public class App {
     }
 
     private static void pesanTiket() throws IOException {
-        FileWriter fileOutput = new FileWriter("src/pembelian.txt", true);
+        clearScreen();
+        FileWriter fileOutput = new FileWriter("src/PembelianTiket.txt", true);
         BufferedWriter bufferOutput = new BufferedWriter(fileOutput);
-        File database = new File("src/temp.txt");
 
+        File database = new File("src/film.txt");
         FileReader fileInput = new FileReader(database);
         BufferedReader bufferedInput = new BufferedReader(fileInput);
         System.out.println("LIst Film");
         lihatFilm();
-
+        String namaFilm = "", hargaFilm;
         Scanner input = new Scanner(System.in);
         System.out.print("Masukkan nomor film yang akan ditonton : ");
-        int updateNum = input.nextInt();
+        int pilihFilm = input.nextInt();
         String dataFilm = bufferedInput.readLine();
         int dataCount = 0;
         while (dataFilm != null) {
@@ -470,49 +473,296 @@ public class App {
 
             StringTokenizer st = new StringTokenizer(dataFilm, ",");
 
-            // Tampilkan datacount == updatenum
-            if (updateNum == dataCount) {
+            // Tampilkan datacount == pilihFilm
+            if (pilihFilm == dataCount) {
 
                 // Tampilkan data baru kelayar
                 st = new StringTokenizer(dataFilm, ",");
                 st.nextToken();
-                String namaFilm = st.nextToken();
+                namaFilm = st.nextToken();
                 st.nextToken();
                 st.nextToken();
                 st.nextToken();
                 st.nextToken();
-                String hargaFilm = st.nextToken();
+                hargaFilm = st.nextToken();
+                int totalTiket;
+                System.out.print("Masukkan jumlah tiket: ");
+                totalTiket = input.nextInt();
+                String tanggalSekarang = getTanggal();
+                int totalharga = Integer.parseInt(hargaFilm) * totalTiket;
+                int diskon = tampilanDiskon();
+                int totalBayar = totalharga - totalharga * diskon / 100;
+                String primaryKey = tanggalSekarang + "_" + namaFilm + "_" + totalTiket;
+                System.out.println("\nData yang akan anda masukan adalah");
+                System.out.println("--------------------------------------");
+                System.out.println("Primary key  : " + primaryKey);
+                System.out.println("Nama Film    : " + namaFilm);
+                System.out.println("Tanggal      : " + tanggalSekarang);
+                System.out.println("Total TIket  : " + totalTiket);
+                System.out.println("Total Harga  : " + totalharga);
+                System.out.println("Diskon       : " + diskon + "%");
+                System.out.println("Total Bayar  : " + totalBayar);
+                boolean isPesan = getYesorNo("Apakah anda ingin pesan tiket");
+                if (isPesan) {
+                    bufferOutput.write(primaryKey + "," + namaFilm + "," + tanggalSekarang + "," + totalTiket + ","
+                            + totalharga + "," + diskon + "," + totalBayar);
+                    bufferOutput.newLine();
+                    bufferOutput.flush();
+                }
             }
+            dataFilm = bufferedInput.readLine();
         }
-        int totalTiket;
-        System.out.print("Masukkan jumlah tiket: ");
-        totalTiket = input.nextInt();
-
-        // Mendapatkan Hari ini
-        Date hariIni = new Date();
-        
-
-        // Menulis data di data.text
-        System.out.println("\nData yang akan anda masukan adalah");
-        System.out.println("--------------------------------------");
-        System.out.println("Tanggal Menonton    : ");
-        // System.out.println("Judul Film     : " + judulFilm);
-        // System.out.println("Tanggal Tayang : " + tanggalFilm);
-        // // System.out.println("Sutradara      : " + sutradara);
-        // System.out.println("studio         : " + studio);
-        // // System.out.println("jmlTiket       : " + jmlTiket);
-        // System.out.println("harga          : " + harga);
-
+        if (namaFilm == "") {
+            System.out.println("Maaf Film tidak tersedia !");
+            pesanTiket();
+        }
         bufferOutput.close();
     }
 
-    private static double tampilanDiskon() {
+    private static void historyPesanTiket() throws IOException {
+        FileReader fileInput;
+        BufferedReader bufferInput;
+
+        try {
+            fileInput = new FileReader("src/PembelianTiket.txt");
+            bufferInput = new BufferedReader(fileInput);
+        } catch (Exception e) {
+            System.err.println("Database tidak ditemukan");
+            System.err.println("Silahkan tambah data terlebih dahulu");
+            pesanTiket();
+            return;
+        }
+        System.out
+                .print("-----------------------------------------------------------------------------------------------------------------");
+        System.out.println(
+                "\n| NO |\tJudul Film            |\tTANGGAL MENONTON      |\tJUMLAH TIKET |\tTOTAL HARGA  |\tDISKON  |   TOTAL BAYAR");
+        System.out
+                .println(
+                        "-----------------------------------------------------------------------------------------------------------------");
+
+        String data = bufferInput.readLine();
+        int nomorData = 0;
+        while (data != null) {
+            nomorData++;
+
+            System.out.printf("| %2d ", nomorData);
+            StringTokenizer stringToken = new StringTokenizer(data, ",");
+
+            stringToken.nextToken();
+            System.out.printf("|\t%-20s  ", stringToken.nextToken());
+            System.out.printf("|\t%-20s  ", stringToken.nextToken());
+            System.out.printf("|\t%-11s  ", stringToken.nextToken());
+            System.out.printf("|\t%-13s", stringToken.nextToken());
+            System.out.printf("|\t%-8s", stringToken.nextToken());
+            System.out.printf("|\t%-10s", stringToken.nextToken());
+            System.out.printf("\n");
+
+            data = bufferInput.readLine();
+        }
+        System.out.println(
+                "-----------------------------------------------------------------------------------------------------------------");
+        fileInput.close();
+        bufferInput.close();
+    }
+
+    private static void lihatMenu() throws IOException {
+        FileReader fileInput;
+        BufferedReader bufferInput;
+
+        try {
+            fileInput = new FileReader("src/Menu.txt");
+            bufferInput = new BufferedReader(fileInput);
+        } catch (Exception e) {
+            System.err.println("Database tidak ditemukan");
+            System.err.println("Silahkan tambah data terlebih dahulu");
+            tambahMenu();
+            return;
+        }
+        System.out
+                .print("-----------------------------------------");
+        System.out.println(
+                "\n| NO |\tNAMA MAKANAN     | HARGA      ");
+        System.out
+                .println(
+                        "-----------------------------------------");
+
+        String data = bufferInput.readLine();
+        int nomorData = 0;
+        while (data != null) {
+            nomorData++;
+
+            System.out.printf("| %2d ", nomorData);
+            StringTokenizer stringToken = new StringTokenizer(data, ",");
+
+            System.out.printf("|\t%-15s  ", stringToken.nextToken());
+            System.out.printf("|\t%-20s  ", stringToken.nextToken());
+            System.out.printf("\n");
+
+            data = bufferInput.readLine();
+        }
+        System.out.println(
+                "-----------------------------------------");
+        fileInput.close();
+        bufferInput.close();
+    }
+
+    private static void pesanMakanan() throws IOException {
+        clearScreen();
+        FileWriter fileOutput = new FileWriter("src/PembelianMakanan.txt", true);
+        BufferedWriter bufferOutput = new BufferedWriter(fileOutput);
+
+        File database = new File("src/Menu.txt");
+        FileReader fileInput = new FileReader(database);
+        BufferedReader bufferedInput = new BufferedReader(fileInput);
+        System.out.println("List Makanan");
+        lihatMenu();
+        String namaMakanan = "", hargaMakanan;
+        Scanner input = new Scanner(System.in);
+        System.out.print("Masukkan nomor makanan yang akan dipesan : ");
+        int pilihMakanan = input.nextInt();
+        String dataMakanan = bufferedInput.readLine();
+        int dataCount = 0;
+        while (dataMakanan != null) {
+            dataCount++;
+
+            StringTokenizer st = new StringTokenizer(dataMakanan, ",");
+
+            // Tampilkan datacount == pilihMakanan
+            if (pilihMakanan == dataCount) {
+
+                // Tampilkan data baru kelayar
+                st = new StringTokenizer(dataMakanan, ",");
+                namaMakanan = st.nextToken();
+                hargaMakanan = st.nextToken();
+                int totalPesan;
+                System.out.print("Masukkan jumlah pesan : ");
+                totalPesan = input.nextInt();
+                String tanggalSekarang = getTanggal();
+                int totalharga = Integer.parseInt(hargaMakanan) * totalPesan;
+                String primaryKey = tanggalSekarang + "_" + namaMakanan + "_" + totalPesan;
+                System.out.println("\nData yang akan anda masukan adalah");
+                System.out.println("--------------------------------------");
+                System.out.println("Primary key  : " + primaryKey);
+                System.out.println("Nama Makanan : " + namaMakanan);
+                System.out.println("Tanggal      : " + tanggalSekarang);
+                System.out.println("Total Pesan  : " + totalPesan);
+                System.out.println("Total Harga  : " + totalharga);
+                boolean isPesan = getYesorNo("Apakah anda ingin pesan ini");
+                if (isPesan) {
+                    bufferOutput.write(primaryKey + "," + namaMakanan + "," + tanggalSekarang + "," + totalPesan + ","
+                            + totalharga);
+                    bufferOutput.newLine();
+                    bufferOutput.flush();
+                }
+            }
+            dataMakanan = bufferedInput.readLine();
+        }
+        if (namaMakanan == "") {
+            System.out.println("Maaf Film tidak tersedia !");
+            pesanTiket();
+        }
+        bufferOutput.close();
+    }
+
+    private static void tambahMenu() throws IOException {
+        FileWriter fileOutput = new FileWriter("src/Menu.txt", true);
+        BufferedWriter bufferOutput = new BufferedWriter(fileOutput);
+
+        // mengambil input dari user
+        Scanner input = new Scanner(System.in);
+        String namaMakanan, hargaMakanan;
+        System.out.print("Masukkan nama makanan : ");
+        namaMakanan = input.nextLine();
+        System.out.print("Masukkan Harga makanan: ");
+        hargaMakanan = input.nextLine();
+
+        String[] keywords = { namaMakanan + "," + hargaMakanan };
+
+        boolean isExist = cekDataMakanan(keywords, false);
+
+        // Menulis data di data.text
+        if (!isExist) {
+            System.out.println("\nData yang akan anda masukan adalah");
+            System.out.println("--------------------------------------");
+            System.out.println("Nama Makanan        : " + namaMakanan);
+            System.out.println("Harga Makanan       : " + hargaMakanan);
+
+            boolean isTambah = getYesorNo("Apakah anda ingin menambah menu");
+
+            if (isTambah) {
+                bufferOutput.write(namaMakanan + "," + hargaMakanan);
+                bufferOutput.newLine();// menambahkan baris baru
+                bufferOutput.flush();// digunakan untuk menulis data ke data.text
+            }
+
+        } else {
+            System.out.println("Menu yang anda akan masukkan sudah tersedia dengan data sebagai berikut : ");
+            cekDataMakanan(keywords, true);
+        }
+        bufferOutput.close();
+    }
+
+    private static boolean cekDataMakanan(String[] keywords, boolean isDisplay) throws IOException {
+        FileReader fileInput = new FileReader("src/Menu.txt");
+        BufferedReader bufferedInput = new BufferedReader(fileInput);
+
+        String data = bufferedInput.readLine();
+        if (isDisplay) {
+            System.out
+                    .print("-----------------------------------------");
+            System.out.println(
+                    "\n| NO |\tNAMA MAKANAN     | HARGA      ");
+            System.out
+                    .println(
+                            "-----------------------------------------");
+        }
+        boolean isExist = false;
+        int nomorData = 0;
+        while (data != null) {
+            // Cek keyword per baris
+            isExist = true;
+
+            for (String keyword : keywords) {
+                // menentukan apakah data mengandung keyword
+                isExist = isExist && data.toLowerCase().contains(keyword.toLowerCase());
+            }
+            // Jika keywordnya cocok akan ditampilkan
+            if (isExist) {
+                if (isDisplay) {
+                    nomorData++;
+                    System.out.printf("| %2d ", nomorData);
+                    StringTokenizer stringToken = new StringTokenizer(data, ",");
+
+                    System.out.printf("|\t%-15s  ", stringToken.nextToken());
+                    System.out.printf("|\t%-20s  ", stringToken.nextToken());
+                    System.out.printf("\n");
+                } else {
+                    break;
+                }
+            }
+            data = bufferedInput.readLine();
+        }
+        if (isDisplay) {
+            System.out.println(
+                    "-----------------------------------------");
+        }
+        return isExist;
+    }
+
+    private static String getTanggal() {
+        LocalDateTime myDateObj = LocalDateTime.now();
+        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        String formattedDate = myDateObj.format(myFormatObj);
+        return formattedDate;
+    }
+
+    private static int tampilanDiskon() {
         Date hariIni = new Date();
-        double diskon = 0;
+        int diskon = 0;
         if (hariIni.getDay() == 0 || hariIni.getDay() == 6) {
             return diskon = 0;
         } else {
-            return diskon = 0.2;
+            return diskon = 20;
         }
     }
 
